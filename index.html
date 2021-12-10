@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"
+        integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Konzola za prikaz</title>
+    <style>
+        canvas {
+            background-color: wheat;
+        }
+    </style>
+</head>
+
+<body>
+    <button id="igraj">Igraj</button>
+    <button id="pauza">Pauziraj</button>
+    <label id="skor">Poeni: </label>
+    <button id="restart">Pokusaj ponovo</button>
+    <br>
+    <canvas tabindex="1" width="500" height="500"></canvas>
+    <script>
+        let igrajdugme = document.getElementById("igraj");
+        let pauzadugme = document.getElementById("pauza");
+        let restartdugme = document.getElementById("restart");
+        let skorlbl = document.getElementById("skor");
+        let ispisiStanje = function () {
+            $.get("stanjeterena", function (data, status) {
+                console.log(JSON.parse(data));
+            });
+        }
+        igrajdugme.onclick = function () {
+            $.get("zapocniigru", function (data, status) {
+            });
+        }
+        pauzadugme.onclick = function () {
+            $.get("pauzirajigru", function (data, status) {
+            });
+        }
+        restartdugme.onclick = function () {
+            $.get("novaigra", function (data, status) {
+            });
+        }
+        let canvas = document.querySelector("canvas");
+        canvas.onkeydown = function (e) {
+            if (e.keyCode == 32) {//space
+                let x = mousex, y = mousey;
+                let vektorbrzine = { x: -stanjeIgre.igrac.pozicija.x + x / 5, y: -stanjeIgre.igrac.pozicija.y + y / 5 }
+                $.get("zatrazipucanje?x=" + vektorbrzine.x + "&y=" + vektorbrzine.y, function (data, status) {
+                    /*if (data) {
+                        let dat = JSON.parse(data)
+                        if (dat && dat.uspeh) {
+                            //USPESNO PUCAO
+                        }
+                    }*/
+                });
+                let ugao = 0;
+                console.log(vektorbrzine);
+            }
+            if (e.keyCode == 65) {
+                $.get("zelilevo", function (data, status) {
+                });
+            }
+            if (e.keyCode == 68) {
+                $.get("zelidesno", function (data, status) {
+                });
+            }
+        }
+        canvas.onmousemove = function (e) {
+            mousex = e.offsetX;
+            mousey = e.offsetY;
+        }
+        canvas.onclick = function (e) {
+        }
+        let ctx = canvas.getContext("2d");
+        let nacrtajKrug = function (ctx, x, y, r) {
+            if (x > 500 || x < 0 || y > 500 || y < 0) return;
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, 2 * Math.PI);
+            ctx.stroke();
+        }
+        let normalizujZaRender = function (obj) {
+            return { pozicija: { x: obj.pozicija.x * 5, y: obj.pozicija.y * 5 }, poluprecnik: obj.poluprecnik * 5 };
+        }
+        let render = function (stanje) {
+            skorlbl.innerText = "Poeni: " + stanje.skor;
+            let igrac = normalizujZaRender(stanje.igrac);
+            ctx.clearRect(0, 0, 500, 500);
+            console.log()
+            nacrtajKrug(ctx, igrac.pozicija.x, igrac.pozicija.y, igrac.poluprecnik);
+
+            for (let i in stanje.meci) {
+                let metak = normalizujZaRender(stanje.meci[i]);
+                nacrtajKrug(ctx, metak.pozicija.x, metak.pozicija.y, metak.poluprecnik);
+            }
+            for (let i in stanje.neprijatelji) {
+                let neprijatelj = normalizujZaRender(stanje.neprijatelji[i]);
+                nacrtajKrug(ctx, neprijatelj.pozicija.x, neprijatelj.pozicija.y, neprijatelj.poluprecnik);
+            }
+        }
+        let prikazi = function () {
+            $.get("stanjeterena", function (data, status) {
+                stanjeIgre = JSON.parse(data);
+                render(stanjeIgre);
+                //console.log("Data: " + data + "\nStatus: " + status);
+            });
+        }
+
+        let stanjeIgre = { frame: 0, traje: false }, prosloStanje = { frame: 0, traje: false };
+        let novifrejm = 0;
+        setInterval(function () {
+            prikazi();
+            /*if (stanjeIgre.traje) {
+                if (stanjeIgre.frame > prosloStanje.frame) {
+                    //Korak bota
+                    let x = Math.random() * 2 - 1
+                    $.get("zatrazipucanje?x=" + x + "&y=-1", function (data, status) {
+                    });
+                }
+                prosloStanje = stanjeIgre;
+            }
+            else if (stanjeIgre.igrac?.mrtav) {
+                $.get("novaigra", function (data, status) {
+                });
+            }
+            else {
+                stanjeIgre = { frame: 0, traje: false };
+                prosloStanje = { frame: 0, traje: false };
+                novifrejm = 0;
+                $.get("zapocniigru", function (data, status) {
+                });
+            }*/
+        }, 1000 / 120); //Da bi vise frejmova bilo obradjeno salje zahtev 2 puta po frejmu
+    </script>
+</body>
+
+</html>
